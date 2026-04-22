@@ -1,18 +1,18 @@
-# Import Flask class from flask package
 from flask import Flask
+from dotenv import load_dotenv
 
-# Create an instance of the Flask application
+load_dotenv()
+
+from routes.describe import describe_bp
+
 app = Flask(__name__)
 
-# Define a route (API endpoint) for "/health"
+# ✅ THIS LINE IS CRITICAL
+app.register_blueprint(describe_bp)
+
 @app.route("/health")
 def health():
-    """
-    Health check endpoint.
-    When this URL is accessed, it returns a simple JSON response
-    indicating that the service is up and running.
-    """
-    return {"status": "ok"}  # JSON response
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
