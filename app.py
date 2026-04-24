@@ -3,12 +3,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# 🔹 Import both blueprints
 from routes.describe import describe_bp
+from routes.recommend import recommend_bp   # ✅ ADD THIS
 
 app = Flask(__name__)
 
-# ✅ THIS LINE IS CRITICAL
+# 🔹 Register both routes
 app.register_blueprint(describe_bp)
+app.register_blueprint(recommend_bp)       # ✅ ADD THIS
 
 @app.route("/health")
 def health():
