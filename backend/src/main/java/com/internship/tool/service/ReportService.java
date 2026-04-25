@@ -13,7 +13,13 @@ public class ReportService {
     @Autowired
     private ReportRepository repo;
 
+
     public List<Report> getAllReports() {
         return repo.findAll();
+    }
+
+    
+    public Report saveReport(Report report) {
+        return repo.save(report);
     }
 }

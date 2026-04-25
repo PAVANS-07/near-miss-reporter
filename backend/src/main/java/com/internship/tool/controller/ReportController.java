@@ -19,4 +19,10 @@ public class ReportController {
     public List<Report> getAllReports() {
         return service.getAllReports();
     }
+
+  
+    @PostMapping("/add")
+    public Report addReport(@RequestBody Report report) {
+        return service.saveReport(report);
+    }
 }

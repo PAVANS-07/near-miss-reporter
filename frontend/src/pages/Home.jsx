@@ -2,20 +2,40 @@ import { useEffect, useState } from "react";
 import api from "../services/api";
 
 export default function Home() {
+
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+
+  const fetchReports = () => {
     api.get("/all")
-      .then(res => {
-        setReports(res.data);
+      .then(res => setReports(res.data))
+      .catch(err => console.log(err))
+      .finally(() => setLoading(false));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!title || !description) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    api.post("/add", { title, description })
+      .then(() => {
+        setTitle("");
+        setDescription("");
+        fetchReports(); // refresh table
       })
-      .catch(err => {
-        console.error(err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      .catch(err => console.log(err));
+  };
+
+ 
+  useEffect(() => {
+    fetchReports();
   }, []);
 
   if (loading) return <p>Loading...</p>;
@@ -24,6 +44,30 @@ export default function Home() {
     <div style={{ padding: "20px" }}>
       <h1>Reports</h1>
 
+      {/* 🔹 FORM */}
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Enter Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <br /><br />
+
+        <input
+          type="text"
+          placeholder="Enter Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <br /><br />
+
+        <button type="submit">Add Report</button>
+      </form>
+
+      <hr />
+
+      {/* 🔹 TABLE */}
       {reports.length === 0 ? (
         <p>No data</p>
       ) : (
