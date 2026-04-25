@@ -16,4 +16,13 @@ public class ReportService {
     public List<Report> getAllReports() {
         return repo.findAll();
     }
+
+    public Report saveReport(Report report) {
+        return repo.save(report);
+    }
+
+    
+    public void deleteReport(Long id) {
+        repo.deleteById(id);
+    }
 }

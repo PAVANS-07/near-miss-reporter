@@ -9,8 +9,11 @@ public class Report {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String title;
     private String description;
+
+    // ✅ Getters and Setters
 
     public Long getId() {
         return id;

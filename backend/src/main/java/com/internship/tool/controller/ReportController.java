@@ -15,8 +15,28 @@ public class ReportController {
     @Autowired
     private ReportService service;
 
+    
     @GetMapping("/all")
     public List<Report> getAllReports() {
         return service.getAllReports();
+    }
+
+  
+    @PostMapping("/add")
+    public Report addReport(@RequestBody Report report) {
+        return service.saveReport(report);
+    }
+
+    
+    @DeleteMapping("/delete/{id}")
+    public void deleteReport(@PathVariable Long id) {
+        service.deleteReport(id);
+    }
+
+    
+    @PutMapping("/update/{id}")
+    public Report updateReport(@PathVariable Long id, @RequestBody Report report) {
+        report.setId(id);
+        return service.saveReport(report);
     }
 }
