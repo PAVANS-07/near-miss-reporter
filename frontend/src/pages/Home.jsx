@@ -8,6 +8,9 @@ export default function Home() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [editId, setEditId] = useState(null);
+
+  const [search, setSearch] = useState("");
 
   const fetchReports = () => {
     api.get("/all")
@@ -16,81 +19,128 @@ export default function Home() {
       .finally(() => setLoading(false));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!title || !description) {
-      alert("Please fill all fields");
-      return;
-    }
-
-    api.post("/add", { title, description })
-      .then(() => {
-        setTitle("");
-        setDescription("");
-        fetchReports(); // refresh table
-      })
-      .catch(err => console.log(err));
-  };
-
- 
   useEffect(() => {
     fetchReports();
   }, []);
 
-  if (loading) return <p>Loading...</p>;
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!title || !description) return;
+
+    if (editId) {
+      api.put(`/update/${editId}`, { title, description })
+        .then(() => {
+          setEditId(null);
+          setTitle("");
+          setDescription("");
+          fetchReports();
+        });
+    } else {
+      api.post("/add", { title, description })
+        .then(() => {
+          setTitle("");
+          setDescription("");
+          fetchReports();
+        });
+    }
+  };
+
+  const handleDelete = (id) => {
+    api.delete(`/delete/${id}`)
+      .then(() => fetchReports());
+  };
+
+  const handleEdit = (item) => {
+    setTitle(item.title);
+    setDescription(item.description);
+    setEditId(item.id);
+  };
+
+  const filteredReports = reports.filter((item) =>
+    item.title.toLowerCase().includes(search.toLowerCase()) ||
+    item.description.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (loading) return <p className="text-center mt-10">Loading...</p>;
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Reports</h1>
+    <div className="max-w-4xl mx-auto p-5">
 
-      {/* 🔹 FORM */}
-      <form onSubmit={handleSubmit}>
+      <h1 className="text-3xl font-bold text-center mb-6">
+        📊 Report Manager
+      </h1>
+
+      {/* FORM */}
+      <form onSubmit={handleSubmit} className="bg-white p-4 rounded shadow mb-6">
         <input
           type="text"
-          placeholder="Enter Title"
+          placeholder="Title"
+          className="w-full p-2 border rounded mb-3"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <br /><br />
 
         <input
           type="text"
-          placeholder="Enter Description"
+          placeholder="Description"
+          className="w-full p-2 border rounded mb-3"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        <br /><br />
 
-        <button type="submit">Add Report</button>
+        <button className="w-full bg-green-500 text-white py-2 rounded">
+          {editId ? "Update Report" : "Add Report"}
+        </button>
       </form>
 
-      <hr />
+      {/* SEARCH */}
+      <input
+        type="text"
+        placeholder="Search..."
+        className="w-full p-2 border rounded mb-4"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
 
-      {/* 🔹 TABLE */}
-      {reports.length === 0 ? (
-        <p>No data</p>
-      ) : (
-        <table border="1" cellPadding="10">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Title</th>
-              <th>Description</th>
+      {/* TABLE */}
+      <table className="w-full border shadow">
+        <thead className="bg-gray-800 text-white">
+          <tr>
+            <th className="p-2">ID</th>
+            <th className="p-2">Title</th>
+            <th className="p-2">Description</th>
+            <th className="p-2">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {filteredReports.map((item) => (
+            <tr key={item.id} className="text-center border-t">
+              <td className="p-2">{item.id}</td>
+              <td className="p-2">{item.title}</td>
+              <td className="p-2">{item.description}</td>
+
+              <td className="p-2">
+                <button
+                  onClick={() => handleEdit(item)}
+                  className="bg-blue-500 text-white px-2 py-1 rounded mr-2"
+                >
+                  Edit
+                </button>
+
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  className="bg-red-500 text-white px-2 py-1 rounded"
+                >
+                  Delete
+                </button>
+              </td>
             </tr>
-          </thead>
+          ))}
+        </tbody>
+      </table>
 
-          <tbody>
-            {reports.map((item) => (
-              <tr key={item.id}>
-                <td>{item.id}</td>
-                <td>{item.title}</td>
-                <td>{item.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
     </div>
   );
 }
