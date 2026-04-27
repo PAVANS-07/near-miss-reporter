@@ -14,19 +14,27 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("ALL");
 
+  // 🔹 Pagination
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const size = 5; // records per page
 
+  // 🔹 Fetch
   const fetchReports = () => {
-    api.get("/all")
-      .then(res => setReports(res.data))
+    api.get(`/page?page=${page}&size=${size}`)
+      .then(res => {
+        setReports(res.data.content);
+        setTotalPages(res.data.totalPages);
+      })
       .catch(err => console.log(err))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [page]);
 
-  
+  // 🔹 Add / Update
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -54,19 +62,21 @@ export default function Home() {
     setEditId(null);
   };
 
-  
+  // 🔹 Delete
   const handleDelete = (id) => {
     api.delete(`/delete/${id}`)
       .then(() => fetchReports());
   };
 
- const handleEdit = (item) => {
+  // 🔹 Edit
+  const handleEdit = (item) => {
     setTitle(item.title);
     setDescription(item.description);
     setStatus(item.status);
     setEditId(item.id);
   };
-  
+
+  // 🔹 Filter + Search
   const filteredReports = reports.filter((item) => {
     const matchesSearch =
       item.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -105,7 +115,6 @@ export default function Home() {
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        {/* STATUS DROPDOWN */}
         <select
           className="w-full p-2 border rounded mb-3"
           value={status}
@@ -144,7 +153,7 @@ export default function Home() {
       <table className="w-full border shadow">
         <thead className="bg-gray-800 text-white">
           <tr>
-            <th className="p-2">ID</th>
+            <th className="p-2">S.No</th>   {/* ⭐ SERIAL */}
             <th className="p-2">Title</th>
             <th className="p-2">Description</th>
             <th className="p-2">Status</th>
@@ -153,9 +162,14 @@ export default function Home() {
         </thead>
 
         <tbody>
-          {filteredReports.map((item) => (
+          {filteredReports.map((item, index) => (
             <tr key={item.id} className="text-center border-t">
-              <td className="p-2">{item.id}</td>
+
+              {/* ⭐ SERIAL NUMBER FIX */}
+              <td className="p-2">
+                {(page * size) + index + 1}
+              </td>
+
               <td className="p-2">{item.title}</td>
               <td className="p-2">{item.description}</td>
               <td className="p-2">{item.status}</td>
@@ -179,6 +193,29 @@ export default function Home() {
           ))}
         </tbody>
       </table>
+
+      {/* PAGINATION */}
+      <div className="flex justify-center mt-4">
+        <button
+          onClick={() => setPage(page - 1)}
+          disabled={page === 0}
+          className="px-3 py-1 bg-gray-300 mr-2"
+        >
+          Prev
+        </button>
+
+        <span className="px-3 py-1">
+          Page {page + 1} of {totalPages}
+        </span>
+
+        <button
+          onClick={() => setPage(page + 1)}
+          disabled={page + 1 >= totalPages}
+          className="px-3 py-1 bg-gray-300 ml-2"
+        >
+          Next
+        </button>
+      </div>
 
     </div>
   );
