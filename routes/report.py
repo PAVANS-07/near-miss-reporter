@@ -20,10 +20,18 @@ def generate_report():
     start = time.time()
 
     data = request.get_json()
+
+    # 🔐 Input validation
     if not data or "text" not in data:
         return jsonify({"error": "Missing text"}), 400
 
     text = data["text"]
+
+    if not isinstance(text, str) or len(text.strip()) == 0:
+        return jsonify({"error": "Invalid input"}), 400
+
+    if len(text) > 500:
+        return jsonify({"error": "Input too long"}), 400
 
     cached = get_from_cache(text)
     if cached:

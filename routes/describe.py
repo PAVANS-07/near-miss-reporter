@@ -20,32 +20,34 @@ def load_prompt(text):
 # POST /describe endpoint
 @describe_bp.route("/describe", methods=["POST"])
 def describe():
-    start = time.time()  # start timer to measure response time
+    start = time.time()
 
-    # Get request JSON data
     data = request.get_json()
 
-    # Check if "text" is present
+    # 🔐 Input validation
     if not data or "text" not in data:
         return jsonify({"error": "Missing text"}), 400
 
     text = data["text"]
 
-    # 🔹 Check if result is already in cache
+    if not isinstance(text, str) or len(text.strip()) == 0:
+        return jsonify({"error": "Invalid input"}), 400
+
+    if len(text) > 500:
+        return jsonify({"error": "Input too long"}), 400
+
+    # 🔹 Check cache
     cached = get_from_cache(text)
     if cached:
-        return jsonify(cached)  # return cached response if available
+        return jsonify(cached)
 
-    # Load prompt and insert user input
     prompt = load_prompt(text)
 
-    # Call Groq AI
     try:
         ai_response = call_groq(prompt)
     except:
-        ai_response = None  # if error happens, set to None
+        ai_response = None
 
-    # If AI fails, return fallback response
     if not ai_response:
         return jsonify({
             "description": "Unable to generate description",
@@ -54,7 +56,6 @@ def describe():
             "generated_at": datetime.utcnow().isoformat()
         })
 
-    # Convert AI string response into JSON
     try:
         parsed = json.loads(ai_response)
     except:
@@ -65,18 +66,14 @@ def describe():
             "generated_at": datetime.utcnow().isoformat()
         })
 
-    # Final result to return
     result = {
         "description": parsed.get("description"),
         "risk_level": parsed.get("risk_level"),
         "generated_at": datetime.utcnow().isoformat()
     }
 
-    # 🔹 Save result in cache for future use
     set_cache(text, result)
 
-    # 🔹 Store response time for performance tracking
     response_times.append(time.time() - start)
 
-    # Return final response
     return jsonify(result)
