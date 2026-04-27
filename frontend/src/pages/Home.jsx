@@ -8,9 +8,12 @@ export default function Home() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [status, setStatus] = useState("OPEN");
   const [editId, setEditId] = useState(null);
 
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("ALL");
+
 
   const fetchReports = () => {
     api.get("/all")
@@ -23,44 +26,57 @@ export default function Home() {
     fetchReports();
   }, []);
 
+  
   const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!title || !description) return;
 
     if (editId) {
-      api.put(`/update/${editId}`, { title, description })
+      api.put(`/update/${editId}`, { title, description, status })
         .then(() => {
-          setEditId(null);
-          setTitle("");
-          setDescription("");
+          resetForm();
           fetchReports();
         });
     } else {
-      api.post("/add", { title, description })
+      api.post("/add", { title, description, status })
         .then(() => {
-          setTitle("");
-          setDescription("");
+          resetForm();
           fetchReports();
         });
     }
   };
 
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setStatus("OPEN");
+    setEditId(null);
+  };
+
+  
   const handleDelete = (id) => {
     api.delete(`/delete/${id}`)
       .then(() => fetchReports());
   };
 
-  const handleEdit = (item) => {
+ const handleEdit = (item) => {
     setTitle(item.title);
     setDescription(item.description);
+    setStatus(item.status);
     setEditId(item.id);
   };
+  
+  const filteredReports = reports.filter((item) => {
+    const matchesSearch =
+      item.title.toLowerCase().includes(search.toLowerCase()) ||
+      item.description.toLowerCase().includes(search.toLowerCase());
 
-  const filteredReports = reports.filter((item) =>
-    item.title.toLowerCase().includes(search.toLowerCase()) ||
-    item.description.toLowerCase().includes(search.toLowerCase())
-  );
+    const matchesFilter =
+      filter === "ALL" || item.status === filter;
+
+    return matchesSearch && matchesFilter;
+  });
 
   if (loading) return <p className="text-center mt-10">Loading...</p>;
 
@@ -89,6 +105,16 @@ export default function Home() {
           onChange={(e) => setDescription(e.target.value)}
         />
 
+        {/* STATUS DROPDOWN */}
+        <select
+          className="w-full p-2 border rounded mb-3"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
+          <option value="OPEN">OPEN</option>
+          <option value="CLOSED">CLOSED</option>
+        </select>
+
         <button className="w-full bg-green-500 text-white py-2 rounded">
           {editId ? "Update Report" : "Add Report"}
         </button>
@@ -98,10 +124,21 @@ export default function Home() {
       <input
         type="text"
         placeholder="Search..."
-        className="w-full p-2 border rounded mb-4"
+        className="w-full p-2 border rounded mb-3"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
+
+      {/* FILTER */}
+      <select
+        className="w-full p-2 border rounded mb-4"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+      >
+        <option value="ALL">All</option>
+        <option value="OPEN">Open</option>
+        <option value="CLOSED">Closed</option>
+      </select>
 
       {/* TABLE */}
       <table className="w-full border shadow">
@@ -110,6 +147,7 @@ export default function Home() {
             <th className="p-2">ID</th>
             <th className="p-2">Title</th>
             <th className="p-2">Description</th>
+            <th className="p-2">Status</th>
             <th className="p-2">Actions</th>
           </tr>
         </thead>
@@ -120,6 +158,7 @@ export default function Home() {
               <td className="p-2">{item.id}</td>
               <td className="p-2">{item.title}</td>
               <td className="p-2">{item.description}</td>
+              <td className="p-2">{item.status}</td>
 
               <td className="p-2">
                 <button
