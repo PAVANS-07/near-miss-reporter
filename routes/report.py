@@ -46,15 +46,14 @@ def generate_report():
 
     if not ai_response:
         return jsonify({
-            "title": "Report unavailable",
-            "summary": "",
-            "overview": "",
-            "key_items": [],
-            "recommendations": [],
-            "is_fallback": True,
-            "generated_at": datetime.utcnow().isoformat()
-        })
-
+        "title": "AI service unavailable",
+        "summary": "",
+        "overview": "",
+        "key_items": [],
+        "recommendations": [],
+        "is_fallback": True,
+        "generated_at": datetime.utcnow().isoformat()
+    })
     try:
         parsed = json.loads(ai_response)
     except:

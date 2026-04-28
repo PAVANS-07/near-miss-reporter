@@ -49,12 +49,12 @@ def describe():
         ai_response = None
 
     if not ai_response:
-        return jsonify({
-            "description": "Unable to generate description",
-            "risk_level": "medium",
-            "is_fallback": True,
-            "generated_at": datetime.utcnow().isoformat()
-        })
+     return jsonify({
+        "description": "AI service unavailable, please try again later",
+        "risk_level": "medium",
+        "is_fallback": True,
+        "generated_at": datetime.utcnow().isoformat()
+    })
 
     try:
         parsed = json.loads(ai_response)

@@ -46,10 +46,10 @@ def recommend():
 
     if not ai_response:
         return jsonify({
-            "recommendations": [],
-            "is_fallback": True,
-            "generated_at": datetime.utcnow().isoformat()
-        })
+        "recommendations": [],
+        "is_fallback": True,
+        "generated_at": datetime.utcnow().isoformat()
+    })
 
     try:
         parsed = json.loads(ai_response)
