@@ -18,13 +18,13 @@ public class ReportController {
     @Autowired
     private ReportService service;
 
-    // GET ALL
+    
     @GetMapping("/all")
     public List<Report> getAllReports() {
         return service.getAllReports();
     }
 
-    // PAGINATION + SORT (IMPORTANT FIX)
+    
     @GetMapping("/page")
     public Page<Report> getPaginated(
             @RequestParam int page,
@@ -34,7 +34,7 @@ public class ReportController {
         return service.getReportsPaginated(page, size, sort);
     }
 
-    // SEARCH
+    
     @GetMapping("/search")
     public Page<Report> search(
             @RequestParam String keyword,
@@ -44,13 +44,13 @@ public class ReportController {
         return service.searchReports(keyword, page, size);
     }
 
-    // ADD
+
     @PostMapping("/add")
     public Report addReport(@RequestBody Report report) {
         return service.saveReport(report);
     }
 
-    // UPDATE
+    
     @PutMapping("/update/{id}")
     public Report updateReport(
             @PathVariable Long id,
@@ -60,7 +60,7 @@ public class ReportController {
         return service.saveReport(report);
     }
 
-    // DELETE
+
     @DeleteMapping("/delete/{id}")
     public void deleteReport(@PathVariable Long id) {
         service.deleteReport(id);
