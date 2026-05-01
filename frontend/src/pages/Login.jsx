@@ -5,18 +5,23 @@ export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = async () => {
-    try {
-      const res = await api.post("/auth/login", {
-        username,
-        password,
-      });
+const handleLogin = async () => {
+  try {
+    const res = await api.post("/auth/login", {
+      username,
+      password,
+    });
 
-      alert(res.data); // "Login successful"
-    } catch (err) {
-      alert("Login failed");
+    if (res.data === "Login successful") {
+      localStorage.setItem("user", username); // ✅ store user
+      window.location.href = "/home";         // ✅ redirect
+    } else {
+      alert(res.data);
     }
-  };
+  } catch (err) {
+    alert("Login failed");
+  }
+};
 
   return (
     <div className="flex flex-col items-center mt-20 gap-4">
@@ -42,6 +47,15 @@ export default function Login() {
       >
         Login
       </button>
+      <p>
+  Don't have an account?{" "}
+  <span
+    onClick={() => (window.location.href = "/register")}
+    className="text-blue-500 cursor-pointer"
+  >
+    Register
+  </span>
+</p>
     </div>
   );
 }
