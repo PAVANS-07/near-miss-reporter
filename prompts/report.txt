@@ -1,0 +1,19 @@
+You are a workplace safety expert.
+
+Based on the following near-miss incident:
+"{input}"
+
+Generate a structured report.
+
+Rules:
+- Return ONLY valid JSON
+- Keep content clear and concise
+
+Format:
+{
+  "title": "Near Miss Incident Report",
+  "summary": "...",
+  "overview": "...",
+  "key_items": ["...", "...", "..."],
+  "recommendations": ["...", "...", "..."]
+}
