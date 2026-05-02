@@ -1,61 +1,82 @@
 import { useState } from "react";
 import api from "../services/api";
+import toast from "react-hot-toast";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-const handleLogin = async () => {
-  try {
-    const res = await api.post("/auth/login", {
-      username,
-      password,
-    });
-
-    if (res.data === "Login successful") {
-      localStorage.setItem("user", username); // ✅ store user
-      window.location.href = "/home";         // ✅ redirect
-    } else {
-      alert(res.data);
+  const handleLogin = async () => {
+    if (!username || !password) {
+      toast.error("Fill all fields");
+      return;
     }
-  } catch (err) {
-    alert("Login failed");
-  }
-};
+
+    try {
+      setLoading(true);
+
+      const res = await api.post("/auth/login", { username, password });
+
+      if (res.data === "Login successful") {
+        toast.success("Login successful");
+        localStorage.setItem("user", username);
+        setTimeout(() => (window.location.href = "/home"), 1000);
+      } else {
+        toast.error(res.data);
+      }
+    } catch {
+      toast.error("Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="flex flex-col items-center mt-20 gap-4">
-      <h2 className="text-2xl font-bold">Login</h2>
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="card w-80">
+        <h2 className="text-xl font-bold text-center mb-4 dark:text-white">
+          🔐 Login
+        </h2>
 
-      <input
-        type="text"
-        placeholder="Username"
-        className="border p-2"
-        onChange={(e) => setUsername(e.target.value)}
-      />
+        <input
+          placeholder="Username"
+          className="input mb-3"
+          onChange={(e) => setUsername(e.target.value)}
+        />
 
-      <input
-        type="password"
-        placeholder="Password"
-        className="border p-2"
-        onChange={(e) => setPassword(e.target.value)}
-      />
+        <div className="relative mb-3">
+          <input
+            type={show ? "text" : "password"}
+            placeholder="Password"
+            className="input"
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-      <button
-        onClick={handleLogin}
-        className="bg-blue-500 text-white px-4 py-2"
-      >
-        Login
-      </button>
-      <p>
-  Don't have an account?{" "}
-  <span
-    onClick={() => (window.location.href = "/register")}
-    className="text-blue-500 cursor-pointer"
-  >
-    Register
-  </span>
-</p>
+          <span
+            onClick={() => setShow(!show)}
+            className="absolute right-3 top-2 cursor-pointer"
+          >
+            {show ? <FaEyeSlash /> : <FaEye />}
+          </span>
+        </div>
+
+        <button onClick={handleLogin} className="btn-primary w-full">
+          {loading ? "Loading..." : "Login"}
+        </button>
+
+        <p className="text-center mt-3 dark:text-white">
+          No account?{" "}
+          <span
+            className="text-blue-500 cursor-pointer"
+            onClick={() => (window.location.href = "/register")}
+          >
+            Register
+          </span>
+        </p>
+      </div>
     </div>
   );
 }

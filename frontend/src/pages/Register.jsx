@@ -1,48 +1,71 @@
 import { useState } from "react";
 import api from "../services/api";
+import toast from "react-hot-toast";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
 
   const handleRegister = async () => {
-    try {
-      const res = await api.post("/auth/register", {
-        username,
-        password,
-      });
+    if (!username || !password) {
+      toast.error("Fill all fields");
+      return;
+    }
 
-      alert(res.data);
-      window.location.href = "/";
-    } catch (err) {
-      alert("Registration failed");
+    try {
+      const res = await api.post("/auth/register", { username, password });
+      toast.success(res.data);
+      setTimeout(() => (window.location.href = "/"), 1000);
+    } catch {
+      toast.error("Registration failed");
     }
   };
 
   return (
-    <div className="flex flex-col items-center mt-20 gap-4">
-      <h2 className="text-2xl font-bold">Register</h2>
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="card w-80">
+        <h2 className="text-xl font-bold text-center mb-4 dark:text-white">
+          📝 Register
+        </h2>
 
-      <input
-        type="text"
-        placeholder="Username"
-        className="border p-2"
-        onChange={(e) => setUsername(e.target.value)}
-      />
+        <input
+          placeholder="Username"
+          className="input mb-3"
+          onChange={(e) => setUsername(e.target.value)}
+        />
 
-      <input
-        type="password"
-        placeholder="Password"
-        className="border p-2"
-        onChange={(e) => setPassword(e.target.value)}
-      />
+        <div className="relative mb-3">
+          <input
+            type={show ? "text" : "password"}
+            placeholder="Password"
+            className="input"
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-      <button
-        onClick={handleRegister}
-        className="bg-green-500 text-white px-4 py-2"
-      >
-        Register
-      </button>
+          <span
+            onClick={() => setShow(!show)}
+            className="absolute right-3 top-2 cursor-pointer"
+          >
+            {show ? <FaEyeSlash /> : <FaEye />}
+          </span>
+        </div>
+
+        <button onClick={handleRegister} className="btn-success w-full">
+          Register
+        </button>
+
+        <p className="text-center mt-3 dark:text-white">
+          Already have account?{" "}
+          <span
+            className="text-blue-500 cursor-pointer"
+            onClick={() => (window.location.href = "/")}
+          >
+            Login
+          </span>
+        </p>
+      </div>
     </div>
   );
 }
