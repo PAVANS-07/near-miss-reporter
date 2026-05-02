@@ -1,8 +1,8 @@
 package com.internship.tool.controller;
-
+import com.internship.tool.repository.ReportRepository;
 import com.internship.tool.entity.Report;
 import com.internship.tool.service.ReportService;
-
+import com.internship.tool.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,10 +14,12 @@ import org.springframework.data.domain.Page;
 @RequestMapping("/api")
 @CrossOrigin
 public class ReportController {
-
+    @Autowired
+    private ReportRepository repo;
     @Autowired
     private ReportService service;
-
+    @Autowired
+    private EmailService emailService;
     
     @GetMapping("/all")
     public List<Report> getAllReports() {
@@ -45,10 +47,20 @@ public class ReportController {
     }
 
 
-    @PostMapping("/add")
-    public Report addReport(@RequestBody Report report) {
-        return service.saveReport(report);
-    }
+  @PostMapping("/add")
+public Report add(@RequestBody Report r) {
+
+    Report saved = repo.save(r);
+
+    emailService.sendEmail(
+        "pavansceb@gmail.com",
+        "New Report Created",
+        "Title: " + r.getTitle() +
+        "\nStatus: " + r.getStatus()
+    );
+
+    return saved;
+}
 
     
     @PutMapping("/update/{id}")
