@@ -8,7 +8,9 @@ import org.springframework.data.domain.Pageable;
 
 public interface ReportRepository extends JpaRepository<Report, Long> {
 
-    Page<Report> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+    Page<Report> findByIsDeletedFalse(Pageable pageable);
+
+    Page<Report> findByTitleContainingIgnoreCaseAndIsDeletedFalseOrDescriptionContainingIgnoreCaseAndIsDeletedFalse(
             String title,
             String description,
             Pageable pageable
