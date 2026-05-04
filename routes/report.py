@@ -25,13 +25,16 @@ def generate_report():
     if not data or "text" not in data:
         return jsonify({"error": "Missing text"}), 400
 
-    text = data["text"]
+    raw_text = data["text"]
 
-    if not isinstance(text, str) or len(text.strip()) == 0:
+    if not isinstance(raw_text, str) or len(raw_text.strip()) == 0:
         return jsonify({"error": "Invalid input"}), 400
 
-    if len(text) > 500:
+    if len(raw_text) > 500:
         return jsonify({"error": "Input too long"}), 400
+
+    # 🔥 Normalize input
+    text = raw_text.strip().lower()
 
     cached = get_from_cache(text)
     if cached:
@@ -46,14 +49,15 @@ def generate_report():
 
     if not ai_response:
         return jsonify({
-        "title": "AI service unavailable",
-        "summary": "",
-        "overview": "",
-        "key_items": [],
-        "recommendations": [],
-        "is_fallback": True,
-        "generated_at": datetime.utcnow().isoformat()
-    })
+            "title": "AI service unavailable",
+            "summary": "",
+            "overview": "",
+            "key_items": [],
+            "recommendations": [],
+            "is_fallback": True,
+            "generated_at": datetime.utcnow().isoformat()
+        })
+
     try:
         parsed = json.loads(ai_response)
     except:

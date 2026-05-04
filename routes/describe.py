@@ -6,18 +6,18 @@ from services.metrics import response_times
 import json
 import time
 
-# Create a blueprint for /describe API
+# 🔹 Blueprint for /describe API
 describe_bp = Blueprint("describe", __name__)
 
 
-# Function to load prompt file and insert user input
+# 🔹 Load prompt and inject user input
 def load_prompt(text):
     with open("prompts/describe.txt", "r") as f:
         template = f.read()
     return template.replace("{input}", text)
 
 
-# POST /describe endpoint
+# 🔹 POST /describe
 @describe_bp.route("/describe", methods=["POST"])
 def describe():
     start = time.time()
@@ -28,13 +28,16 @@ def describe():
     if not data or "text" not in data:
         return jsonify({"error": "Missing text"}), 400
 
-    text = data["text"]
+    raw_text = data["text"]
 
-    if not isinstance(text, str) or len(text.strip()) == 0:
+    if not isinstance(raw_text, str) or len(raw_text.strip()) == 0:
         return jsonify({"error": "Invalid input"}), 400
 
-    if len(text) > 500:
+    if len(raw_text) > 500:
         return jsonify({"error": "Input too long"}), 400
+
+    # 🔥 Normalize input (Day 12 improvement for caching)
+    text = raw_text.strip().lower()
 
     # 🔹 Check cache
     cached = get_from_cache(text)
@@ -43,19 +46,22 @@ def describe():
 
     prompt = load_prompt(text)
 
+    # 🔹 Call AI
     try:
         ai_response = call_groq(prompt)
     except:
         ai_response = None
 
+    # 🔹 Fallback response
     if not ai_response:
-     return jsonify({
-        "description": "AI service unavailable, please try again later",
-        "risk_level": "medium",
-        "is_fallback": True,
-        "generated_at": datetime.utcnow().isoformat()
-    })
+        return jsonify({
+            "description": "AI service unavailable, please try again later",
+            "risk_level": "medium",
+            "is_fallback": True,
+            "generated_at": datetime.utcnow().isoformat()
+        })
 
+    # 🔹 Parse AI response
     try:
         parsed = json.loads(ai_response)
     except:
@@ -72,8 +78,10 @@ def describe():
         "generated_at": datetime.utcnow().isoformat()
     }
 
+    # 🔹 Save in cache
     set_cache(text, result)
 
+    # 🔹 Track response time
     response_times.append(time.time() - start)
 
     return jsonify(result)
