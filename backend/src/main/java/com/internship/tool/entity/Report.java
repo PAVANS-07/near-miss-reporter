@@ -23,6 +23,9 @@ public class Report {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "is_deleted")
+    private boolean isDeleted = false;
+
     
     @PrePersist
     public void prePersist() {
@@ -92,5 +95,13 @@ public class Report {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
     }
 }

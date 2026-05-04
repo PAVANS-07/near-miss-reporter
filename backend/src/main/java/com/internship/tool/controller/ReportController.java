@@ -41,21 +41,52 @@ public class ReportController {
     // ✅ GET PAGINATION
     @GetMapping("/page")
     public Page<Report> getAll(@RequestParam int page, @RequestParam int size) {
-        return repo.findAll(PageRequest.of(page, size));
+        return repo.findByIsDeletedFalse(PageRequest.of(page, size));
+    }
+
+    // ✅ SEARCH
+    @GetMapping("/search")
+    public Page<Report> search(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+        return repo.findByTitleContainingIgnoreCaseAndIsDeletedFalseOrDescriptionContainingIgnoreCaseAndIsDeletedFalse(
+                q, q, PageRequest.of(page, size)
+        );
     }
 
     // ✅ UPDATE
     @PutMapping("/update/{id}")
     public Report update(@PathVariable Long id, @RequestBody Report r) {
         r.setId(id);
-        return repo.save(r);
+        Report updated = repo.save(r);
+
+        emailService.sendEmail(
+                "pavansceb@gmail.com",
+                "Report Updated",
+                updated.getTitle(),
+                updated.getDescription(),
+                updated.getStatus()
+        );
+
+        return updated;
     }
 
     // ✅ DELETE
     @DeleteMapping("/delete/{id}")
     public String delete(@PathVariable Long id) {
-        repo.deleteById(id);
+        repo.findById(id).ifPresent(report -> {
+            report.setDeleted(true);
+            repo.save(report);
+
+            emailService.sendEmail(
+                    "pavansceb@gmail.com",
+                    "Report Deleted",
+                    report.getTitle(),
+                    report.getDescription(),
+                    "DELETED"
+            );
+        });
         return "Deleted";
-        
     }
 }

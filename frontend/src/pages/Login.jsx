@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../components/AuthContext";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -22,8 +26,8 @@ export default function Login() {
 
       if (res.data === "Login successful") {
         toast.success("Login successful");
-        localStorage.setItem("user", username);
-        setTimeout(() => (window.location.href = "/home"), 1000);
+        login(username);
+        setTimeout(() => navigate("/home"), 1000);
       } else {
         toast.error(res.data);
       }
@@ -71,7 +75,7 @@ export default function Login() {
           No account?{" "}
           <span
             className="text-blue-500 cursor-pointer"
-            onClick={() => (window.location.href = "/register")}
+            onClick={() => navigate("/register")}
           >
             Register
           </span>

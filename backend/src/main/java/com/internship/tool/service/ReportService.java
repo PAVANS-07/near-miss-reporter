@@ -20,7 +20,7 @@ public class ReportService {
 
     // GET ALL
     public List<Report> getAllReports() {
-        return repo.findAll();
+        return repo.findAll().stream().filter(r -> !r.isDeleted()).toList();
     }
 
     // PAGINATION + SORT
@@ -30,13 +30,13 @@ public class ReportService {
                 ? Sort.by("id").descending()
                 : Sort.by("id").ascending();
 
-        return repo.findAll(PageRequest.of(page, size, sort));
+        return repo.findByIsDeletedFalse(PageRequest.of(page, size, sort));
     }
 
     // SEARCH
     public Page<Report> searchReports(String keyword, int page, int size) {
 
-        return repo.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+        return repo.findByTitleContainingIgnoreCaseAndIsDeletedFalseOrDescriptionContainingIgnoreCaseAndIsDeletedFalse(
                 keyword,
                 keyword,
                 PageRequest.of(page, size, Sort.by("id").ascending())
@@ -53,8 +53,11 @@ public class ReportService {
         return repo.save(report);
     }
 
-    // DELETE
+    // DELETE (Soft Delete)
     public void deleteReport(Long id) {
-        repo.deleteById(id);
+        repo.findById(id).ifPresent(report -> {
+            report.setDeleted(true);
+            repo.save(report);
+        });
     }
 }

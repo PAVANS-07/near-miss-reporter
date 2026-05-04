@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import api from "../services/api";
 import toast from "react-hot-toast";
-import { FaHome, FaPlus, FaSignOutAlt } from "react-icons/fa";
+import { FaHome, FaPlus, FaSignOutAlt, FaChartBar, FaRobot, FaEye } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../components/AuthContext";
 import {
   BarChart,
   Bar,
@@ -22,15 +24,30 @@ export default function Home() {
   const [editId, setEditId] = useState(null);
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filter, setFilter] = useState("ALL");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
   const [dark, setDark] = useState(false);
+  const [aiInsight, setAiInsight] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
-  const user = localStorage.getItem("user");
+  const navigate = useNavigate();
+  const { user, logout } = useContext(AuthContext);
   const size = 5;
+
+  // 🔹 Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(0);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   // 🔹 Load dark mode from localStorage
   useEffect(() => {
@@ -52,8 +69,11 @@ export default function Home() {
   // 🔹 Fetch reports
   const fetchReports = () => {
     setLoading(true);
-    api
-      .get(`/api/page?page=${page}&size=${size}`)
+    const url = debouncedSearch.trim() !== "" 
+        ? `/api/search?q=${debouncedSearch}&page=${page}&size=${size}` 
+        : `/api/page?page=${page}&size=${size}`;
+        
+    api.get(url)
       .then((res) => {
         setReports(res.data.content);
         setTotalPages(res.data.totalPages);
@@ -64,7 +84,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchReports();
-  }, [page]);
+  }, [page, debouncedSearch]);
 
   // 🔹 Add / Update
   const handleSubmit = (e) => {
@@ -103,6 +123,31 @@ export default function Home() {
     });
   };
 
+  // 🔹 Upload CSV
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    api.post("/api/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+    .then((res) => {
+      toast.success(res.data || "File uploaded successfully");
+      fetchReports(); // Refresh the list
+    })
+    .catch((err) => {
+      toast.error(err.response?.data || "Error uploading file");
+    });
+    
+    // Reset file input
+    e.target.value = null;
+  };
+
   // 🔹 Edit
   const handleEdit = (r) => {
     setTitle(r.title);
@@ -111,14 +156,22 @@ export default function Home() {
     setEditId(r.id);
   };
 
-  // 🔹 Filter (client-side)
-  const filteredReports = reports.filter(
-    (r) =>
-      (filter === "ALL" || r.status === filter) &&
-      (search.trim() === "" ||
-        r.title.toLowerCase().includes(search.toLowerCase()) ||
-        r.description.toLowerCase().includes(search.toLowerCase()))
-  );
+  // 🔹 Filter (client-side for status and date)
+  const filteredReports = reports.filter((r) => {
+      const matchStatus = filter === "ALL" || r.status === filter;
+      const rDate = new Date(r.createdAt || new Date());
+      const matchStart = !startDate || rDate >= new Date(startDate);
+      const matchEnd = !endDate || rDate <= new Date(endDate);
+      return matchStatus && matchStart && matchEnd;
+  });
+
+  const fetchAIInsights = () => {
+      setAiLoading(true);
+      api.post("http://127.0.0.1:5000/api/recommend", { reports: reports })
+        .then(res => setAiInsight(res.data.recommendation || res.data.message))
+        .catch(() => setAiInsight("Failed to load AI insights. Is the Flask service running?"))
+        .finally(() => setAiLoading(false));
+  };
 
   // 🔹 Chart data (with colors)
   const chartData = [
@@ -149,18 +202,22 @@ export default function Home() {
       <aside className="w-60 bg-gray-900 text-white p-5">
         <h2 className="text-xl font-bold mb-6">Dashboard</h2>
 
-        <div className="flex items-center gap-2 mb-4 cursor-pointer">
+        <div className="flex items-center gap-2 mb-4 cursor-pointer hover:text-blue-400" onClick={() => navigate("/home")}>
           <FaHome /> Home
         </div>
 
-        <div className="flex items-center gap-2 mb-4 cursor-pointer">
+        <div className="flex items-center gap-2 mb-4 cursor-pointer hover:text-blue-400" onClick={() => window.scrollTo(0, document.body.scrollHeight)}>
           <FaPlus /> Add Report
+        </div>
+
+        <div className="flex items-center gap-2 mb-4 cursor-pointer hover:text-blue-400" onClick={() => navigate("/analytics")}>
+          <FaChartBar /> Analytics
         </div>
 
         <button
           onClick={() => {
-            localStorage.removeItem("user");
-            window.location.href = "/";
+            logout();
+            navigate("/");
           }}
           className="flex items-center gap-2 mt-10 bg-red-500 px-3 py-2 rounded hover:bg-red-600"
         >
@@ -185,6 +242,41 @@ export default function Home() {
           >
             {dark ? "☀️ Light" : "🌙 Dark"}
           </button>
+        </div>
+
+        {/* 🔷 KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+           <div className="p-4 bg-blue-100 dark:bg-blue-900 rounded shadow">
+             <h3 className="text-gray-600 dark:text-gray-300">Total Reports</h3>
+             <p className="text-2xl font-bold">{reports.length}</p>
+           </div>
+           <div className="p-4 bg-green-100 dark:bg-green-900 rounded shadow">
+             <h3 className="text-gray-600 dark:text-gray-300">Open</h3>
+             <p className="text-2xl font-bold">{reports.filter(r => r.status === 'OPEN').length}</p>
+           </div>
+           <div className="p-4 bg-red-100 dark:bg-red-900 rounded shadow">
+             <h3 className="text-gray-600 dark:text-gray-300">Closed</h3>
+             <p className="text-2xl font-bold">{reports.filter(r => r.status === 'CLOSED').length}</p>
+           </div>
+           <div className="p-4 bg-purple-100 dark:bg-purple-900 rounded shadow">
+             <h3 className="text-gray-600 dark:text-gray-300">High Severity</h3>
+             <p className="text-2xl font-bold">{reports.filter(r => r.severity === 'High').length}</p>
+           </div>
+        </div>
+
+        {/* 🔷 AI Panel */}
+        <div className="bg-indigo-50 dark:bg-indigo-900 p-4 rounded shadow mb-6 border border-indigo-200">
+           <div className="flex justify-between items-center mb-2">
+              <h2 className="font-semibold flex items-center gap-2"><FaRobot /> AI Insights</h2>
+              <button onClick={fetchAIInsights} className="bg-indigo-500 text-white px-3 py-1 rounded text-sm hover:bg-indigo-600">
+                 Analyze Current Page
+              </button>
+           </div>
+           {aiLoading ? (
+             <div className="flex gap-2 items-center text-indigo-500"><div className="h-4 w-4 animate-spin rounded-full border-b-2 border-indigo-500"></div> Generating insights...</div>
+           ) : (
+             <p className="text-sm whitespace-pre-wrap">{aiInsight || "Click 'Analyze' to get AI recommendations on these near-misses."}</p>
+           )}
         </div>
 
         {/* 🔷 Analytics */}
@@ -242,10 +334,10 @@ export default function Home() {
         </form>
 
         {/* 🔷 Search + Filter */}
-        <div className="flex gap-4 mb-4">
+        <div className="flex flex-wrap gap-4 mb-4">
           <input
-            placeholder="Search..."
-            className="flex-1 border p-2 rounded dark:bg-gray-700 dark:text-white"
+            placeholder="Search (debounced)..."
+            className="flex-1 border p-2 rounded dark:bg-gray-700 dark:text-white min-w-[200px]"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -255,10 +347,38 @@ export default function Home() {
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           >
-            <option value="ALL">All</option>
+            <option value="ALL">All Status</option>
             <option value="OPEN">Open</option>
             <option value="CLOSED">Closed</option>
           </select>
+          
+          <input 
+             type="date" 
+             className="border p-2 rounded dark:bg-gray-700 dark:text-white"
+             value={startDate}
+             onChange={(e) => setStartDate(e.target.value)}
+          />
+          <span className="self-center">to</span>
+          <input 
+             type="date" 
+             className="border p-2 rounded dark:bg-gray-700 dark:text-white"
+             value={endDate}
+             onChange={(e) => setEndDate(e.target.value)}
+          />
+          
+          {/* Upload CSV */}
+          <div className="flex items-center gap-2 border p-2 rounded dark:bg-gray-700 dark:border-gray-600">
+            <label htmlFor="csvUpload" className="cursor-pointer text-sm font-semibold dark:text-white hover:text-blue-500">
+              📥 Import CSV
+            </label>
+            <input
+              id="csvUpload"
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+          </div>
         </div>
 
         {/* 🔷 Table */}
@@ -283,6 +403,13 @@ export default function Home() {
                   <td>{r.status}</td>
 
                   <td className="p-2">
+                    <button
+                      onClick={() => navigate(`/report/${r.id}`)}
+                      className="bg-gray-500 text-white px-2 py-1 mr-2 rounded hover:bg-gray-600"
+                    >
+                       <FaEye />
+                    </button>
+
                     <button
                       onClick={() => handleEdit(r)}
                       className="bg-blue-500 text-white px-2 py-1 mr-2 rounded hover:bg-blue-600"
