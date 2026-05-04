@@ -35,11 +35,16 @@ public class FileUploadController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File size exceeds the 5MB limit.");
         }
 
-        if (!ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
+        String filename = file.getOriginalFilename();
+        boolean isCsv = (filename != null && filename.toLowerCase().endsWith(".csv")) || 
+                        "text/csv".equals(file.getContentType()) || 
+                        "application/vnd.ms-excel".equals(file.getContentType());
+
+        if (!isCsv && !ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid file type. Only JPEG, PNG, PDF, and CSV are allowed.");
         }
 
-        if ("text/csv".equals(file.getContentType())) {
+        if (isCsv) {
             return importCsv(file);
         }
 

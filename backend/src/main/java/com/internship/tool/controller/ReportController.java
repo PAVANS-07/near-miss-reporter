@@ -20,22 +20,24 @@ public class ReportController {
     @Autowired
     private EmailService emailService;
 
-    
     @PostMapping("/add")
-    public Report add(@RequestBody Report r) {
+    public org.springframework.http.ResponseEntity<?> add(@RequestBody Report r) {
+        try {
+            Report saved = repo.save(r);
 
-        Report saved = repo.save(r);
+            emailService.sendEmail(
+                    "pavansceb@gmail.com",  
+                    "New Report Created",
+                    r.getTitle(),
+                    r.getDescription(),
+                    r.getStatus()
+            );
 
-       
-        emailService.sendEmail(
-                "pavansceb@gmail.com",  
-                "New Report Created",
-                r.getTitle(),
-                r.getDescription(),
-                r.getStatus()
-        );
-
-        return saved;
+            return org.springframework.http.ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return org.springframework.http.ResponseEntity.status(500).body("Error: " + e.getMessage() + " | " + e.toString());
+        }
     }
 
     // ✅ GET PAGINATION
@@ -58,18 +60,25 @@ public class ReportController {
     // ✅ UPDATE
     @PutMapping("/update/{id}")
     public Report update(@PathVariable Long id, @RequestBody Report r) {
-        r.setId(id);
-        Report updated = repo.save(r);
+        return repo.findById(id).map(existing -> {
+            if (r.getTitle() != null) existing.setTitle(r.getTitle());
+            if (r.getDescription() != null) existing.setDescription(r.getDescription());
+            if (r.getStatus() != null) existing.setStatus(r.getStatus());
+            if (r.getSeverity() != null) existing.setSeverity(r.getSeverity());
+            if (r.getLocation() != null) existing.setLocation(r.getLocation());
 
-        emailService.sendEmail(
-                "pavansceb@gmail.com",
-                "Report Updated",
-                updated.getTitle(),
-                updated.getDescription(),
-                updated.getStatus()
-        );
+            Report updated = repo.save(existing);
 
-        return updated;
+            emailService.sendEmail(
+                    "pavansceb@gmail.com",
+                    "Report Updated",
+                    updated.getTitle(),
+                    updated.getDescription(),
+                    updated.getStatus()
+            );
+
+            return updated;
+        }).orElseThrow(() -> new RuntimeException("Report not found"));
     }
 
     // ✅ DELETE

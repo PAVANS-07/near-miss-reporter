@@ -98,13 +98,22 @@ export default function Home() {
           toast.success("Report updated");
           resetForm();
           fetchReports();
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("Failed to update report");
         });
     } else {
-      api.post("/api/add", { title, description, status }).then(() => {
-        toast.success("Report added");
-        resetForm();
-        fetchReports();
-      });
+      api.post("/api/add", { title, description, status })
+        .then(() => {
+          toast.success("Report added");
+          resetForm();
+          fetchReports();
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("Failed to add report");
+        });
     }
   };
 
@@ -117,10 +126,15 @@ export default function Home() {
 
   // 🔹 Delete
   const handleDelete = (id) => {
-    api.delete(`/api/delete/${id}`).then(() => {
-      toast.success("Report deleted");
-      fetchReports();
-    });
+    api.delete(`/api/delete/${id}`)
+      .then(() => {
+        toast.success("Report deleted");
+        fetchReports();
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to delete report");
+      });
   };
 
   // 🔹 Upload CSV
@@ -131,11 +145,7 @@ export default function Home() {
     const formData = new FormData();
     formData.append("file", file);
 
-    api.post("/api/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    })
+    api.post("/api/upload", formData)
     .then((res) => {
       toast.success(res.data || "File uploaded successfully");
       fetchReports(); // Refresh the list
