@@ -21,7 +21,6 @@ def recommend():
 
     data = request.get_json()
 
-    # 🔐 Input validation
     if not data or "text" not in data:
         return jsonify({"error": "Missing text"}), 400
 
@@ -33,10 +32,13 @@ def recommend():
     if len(raw_text) > 500:
         return jsonify({"error": "Input too long"}), 400
 
-    # 🔥 Normalize input
+    # Normalize input
     text = raw_text.strip().lower()
 
-    cached = get_from_cache(text)
+    # ✅ FIX: Unique cache key
+    cache_key = f"recommend:{text}"
+
+    cached = get_from_cache(cache_key)
     if cached:
         return jsonify(cached)
 
@@ -68,7 +70,8 @@ def recommend():
         "generated_at": datetime.utcnow().isoformat()
     }
 
-    set_cache(text, result)
+    # ✅ Store correctly
+    set_cache(cache_key, result)
 
     response_times.append(time.time() - start)
 

@@ -6,25 +6,21 @@ from services.metrics import response_times
 import json
 import time
 
-# 🔹 Blueprint for /describe API
 describe_bp = Blueprint("describe", __name__)
 
 
-# 🔹 Load prompt and inject user input
 def load_prompt(text):
     with open("prompts/describe.txt", "r") as f:
         template = f.read()
     return template.replace("{input}", text)
 
 
-# 🔹 POST /describe
 @describe_bp.route("/describe", methods=["POST"])
 def describe():
     start = time.time()
 
     data = request.get_json()
 
-    # 🔐 Input validation
     if not data or "text" not in data:
         return jsonify({"error": "Missing text"}), 400
 
@@ -36,23 +32,23 @@ def describe():
     if len(raw_text) > 500:
         return jsonify({"error": "Input too long"}), 400
 
-    # 🔥 Normalize input (Day 12 improvement for caching)
+    # Normalize input
     text = raw_text.strip().lower()
 
-    # 🔹 Check cache
-    cached = get_from_cache(text)
+    # ✅ FIX: Unique cache key per endpoint
+    cache_key = f"describe:{text}"
+
+    cached = get_from_cache(cache_key)
     if cached:
         return jsonify(cached)
 
     prompt = load_prompt(text)
 
-    # 🔹 Call AI
     try:
         ai_response = call_groq(prompt)
     except:
         ai_response = None
 
-    # 🔹 Fallback response
     if not ai_response:
         return jsonify({
             "description": "AI service unavailable, please try again later",
@@ -61,7 +57,6 @@ def describe():
             "generated_at": datetime.utcnow().isoformat()
         })
 
-    # 🔹 Parse AI response
     try:
         parsed = json.loads(ai_response)
     except:
@@ -78,10 +73,9 @@ def describe():
         "generated_at": datetime.utcnow().isoformat()
     }
 
-    # 🔹 Save in cache
-    set_cache(text, result)
+    # ✅ Store with namespaced key
+    set_cache(cache_key, result)
 
-    # 🔹 Track response time
     response_times.append(time.time() - start)
 
     return jsonify(result)
