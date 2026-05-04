@@ -1,3 +1,33 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 🌈 Global Background */
+body {
+  @apply bg-gradient-to-br from-blue-100 to-gray-200 dark:from-gray-900 dark:to-gray-800;
+}
+
+/* 🧊 Card */
+.card {
+  @apply bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg p-6 rounded-xl shadow-lg;
+}
+
+/* 🔵 Primary Button */
+.btn-primary {
+  @apply bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition;
+}
+
+/* 🟢 Success Button */
+.btn-success {
+  @apply bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition;
+}
+
+/* 🔴 Danger Button */
+.btn-danger {
+  @apply bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition;
+}
+
+/* ✏️ Inputs */
+.input {
+  @apply w-full border p-2 rounded focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white;
+}

@@ -1,14 +1,13 @@
 package com.internship.tool.controller;
 
 import com.internship.tool.entity.Report;
-import com.internship.tool.service.ReportService;
+import com.internship.tool.repository.ReportRepository;
+import com.internship.tool.service.EmailService;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
@@ -16,53 +15,78 @@ import org.springframework.data.domain.Page;
 public class ReportController {
 
     @Autowired
-    private ReportService service;
+    private ReportRepository repo;
+
+    @Autowired
+    private EmailService emailService;
 
     
-    @GetMapping("/all")
-    public List<Report> getAllReports() {
-        return service.getAllReports();
+    @PostMapping("/add")
+    public Report add(@RequestBody Report r) {
+
+        Report saved = repo.save(r);
+
+       
+        emailService.sendEmail(
+                "pavansceb@gmail.com",  
+                "New Report Created",
+                r.getTitle(),
+                r.getDescription(),
+                r.getStatus()
+        );
+
+        return saved;
     }
 
-    
+    // ✅ GET PAGINATION
     @GetMapping("/page")
-    public Page<Report> getPaginated(
-            @RequestParam int page,
-            @RequestParam int size,
-            @RequestParam(defaultValue = "asc") String sort) {
-
-        return service.getReportsPaginated(page, size, sort);
+    public Page<Report> getAll(@RequestParam int page, @RequestParam int size) {
+        return repo.findByIsDeletedFalse(PageRequest.of(page, size));
     }
 
-    
+    // ✅ SEARCH
     @GetMapping("/search")
     public Page<Report> search(
-            @RequestParam String keyword,
-            @RequestParam int page,
-            @RequestParam int size) {
-
-        return service.searchReports(keyword, page, size);
+            @RequestParam String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+        return repo.findByTitleContainingIgnoreCaseAndIsDeletedFalseOrDescriptionContainingIgnoreCaseAndIsDeletedFalse(
+                q, q, PageRequest.of(page, size)
+        );
     }
 
-
-    @PostMapping("/add")
-    public Report addReport(@RequestBody Report report) {
-        return service.saveReport(report);
-    }
-
-    
+    // ✅ UPDATE
     @PutMapping("/update/{id}")
-    public Report updateReport(
-            @PathVariable Long id,
-            @RequestBody Report report) {
+    public Report update(@PathVariable Long id, @RequestBody Report r) {
+        r.setId(id);
+        Report updated = repo.save(r);
 
-        report.setId(id);
-        return service.saveReport(report);
+        emailService.sendEmail(
+                "pavansceb@gmail.com",
+                "Report Updated",
+                updated.getTitle(),
+                updated.getDescription(),
+                updated.getStatus()
+        );
+
+        return updated;
     }
 
-
+    // ✅ DELETE
     @DeleteMapping("/delete/{id}")
-    public void deleteReport(@PathVariable Long id) {
-        service.deleteReport(id);
+    public String delete(@PathVariable Long id) {
+        repo.findById(id).ifPresent(report -> {
+            report.setDeleted(true);
+            repo.save(report);
+
+            emailService.sendEmail(
+                    "pavansceb@gmail.com",
+                    "Report Deleted",
+                    report.getTitle(),
+                    report.getDescription(),
+                    "DELETED"
+            );
+        });
+        return "Deleted";
     }
 }
